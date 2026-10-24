@@ -1,0 +1,39 @@
+# Python bytecode & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases & WAL logs
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Local TLS/SSL certificates & private keys
+*.pem
+*.key
+*.crt
+
+# Testing & linting caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Operating system files
+.DS_Store
+Thumbs.db

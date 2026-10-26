@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        header p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-top: 0.25rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            background: var(--primary);
+            color: #0f172a;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .result-card {
+            display: none;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .result-link {
+            color: var(--success);
+            font-weight: 600;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #334155;
+            color: var(--text);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .status-msg {
+            font-size: 0.85rem;
+            min-height: 1.2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        td a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        td a:hover {
+            text-decoration: underline;
+        }
+
+        .clicks-badge {
+            display: inline-block;
+            background: #0369a1;
+            color: #e0f2fe;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔗 QuickLink Shortener</h1>
+            <p>Convert long URLs into fast, secure redirects with analytics</p>
+        </header>
+
+        <section class="card">
+            <div class="form-group">
+                <label for="longUrl">Enter Destination URL</label>
+                <div class="input-row">
+                    <input type="url" id="longUrl" placeholder="https://example.com/very/long/path" required>
+                    <button onclick="createShortUrl()">Shorten URL</button>
+                </div>
+            </div>
+            <div id="statusMsg" class="status-msg"></div>
+
+            <div id="resultCard" class="result-card">
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--muted);">Your Short Link:</span><br>
+                    <a id="shortLinkOutput" class="result-link" target="_blank"></a>
+                </div>
+                <button id="copyBtn" class="copy-btn" onclick="copyShortLink()">Copy</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 1.2rem;">Recent Links</h2>
+                <button onclick="loadRecentUrls()"
+                    style="background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Short Code</th>
+                        <th>Original Destination</th>
+                        <th>Clicks</th>
+                    </tr>
+                </thead>
+                <tbody id="urlsBody">
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--muted);">Loading links...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        async function createShortUrl() {
+            const input = document.getElementById('longUrl');
+            const url = input.value.trim();
+            const status = document.getElementById('statusMsg');
+            const resultCard = document.getElementById('resultCard');
+            const linkOutput = document.getElementById('shortLinkOutput');
+
+            if (!url) {
+                status.textContent = "Please enter a valid URL.";
+                status.style.color = "var(--error)";
+                return;
+            }
+
+            status.textContent = "Creating short link...";
+            status.style.color = "var(--muted)";
+
+            try {
+                const response = await fetch('/urls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ original_url: url })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    status.textContent = err.detail?.[0]?.msg || "Failed to create short link.";
+                    status.style.color = "var(--error)";
+                    return;
+                }
+
+                const data = await response.json();
+                const shortUrl = `${window.location.origin}/${data.short_code}`;
+
+                linkOutput.href = shortUrl;
+                linkOutput.textContent = shortUrl;
+                resultCard.style.display = "flex";
+                status.textContent = "Link generated successfully!";
+                status.style.color = "var(--success)";
+                input.value = "";
+                loadRecentUrls();
+            } catch (err) {
+                status.textContent = "Network error. Server unreachable.";
+                status.style.color = "var(--error)";
+            }
+        }
+
+        async function copyShortLink() {
+            const text = document.getElementById('shortLinkOutput').textContent;
+            const btn = document.getElementById('copyBtn');
+            try {
+                await navigator.clipboard.writeText(text);
+                btn.textContent = "Copied!";
+                setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+            } catch (err) {
+                btn.textContent = "Failed";
+            }
+        }
+
+        async function loadRecentUrls() {
+            const tbody = document.getElementById('urlsBody');
+            try {
+                const res = await fetch('/urls');
+                if (!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--muted);">No links found.</td></tr>';
+                    return;
+                }
+                const links = await res.json();
+                if (links.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--muted);">No links shortened yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = links.map(item => `
+          <tr>
+            <td><a href="/${item.short_code}" target="_blank">/${item.short_code}</a></td>
+            <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.original_url}">
+              ${item.original_url}
+            </td>
+            <td><span class="clicks-badge">${item.clicks ?? 0}</span></td>
+          </tr>
+        `).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--error);">Error loading recent links.</td></tr>';
+            }
+        }
+
+        loadRecentUrls();
+    </script>
+</body>
+
+</html>
